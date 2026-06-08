@@ -107,6 +107,9 @@ h1{font-size:1.5em;font-weight:700;color:#fff;letter-spacing:-.5px}
 .sort-btn{cursor:pointer;user-select:none}
 .sort-btn:hover{color:#aaa}
 .sort-btn .arr{font-size:.7em;margin-left:2px}
+.eid-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.7em;font-family:monospace;background:#111;border:1px solid #222;color:#666;cursor:pointer;user-select:none;transition:all .15s;white-space:nowrap}
+.eid-badge:hover{border-color:#7c6cf0;color:#c4b5fd;background:#1a1a2e}
+.eid-badge.copied{border-color:#34d399;color:#34d399;background:#0a1f15}
 
 @media(max-width:700px){.sc{grid-template-columns:repeat(2,1fr)}.rf{grid-template-columns:1fr}.mtabs{margin-left:0;margin-top:6px}}
 </style>
@@ -366,6 +369,9 @@ function render(){
 
     return `<tr>
       <td>
+        <span class="eid-badge" onclick="copyEid('${ev.id}',this)" title="클릭하여 복사">${ev.id}</span>
+      </td>
+      <td>
         <div class="en" title="${ev.title}">${ev.title}</div>
         <div class="eh">${ev.clinic}</div>
         ${price?`<div class="price-tag">₩${price}</div>`:''}
@@ -487,6 +493,7 @@ function render(){
     <div style="overflow-x:auto">
     <table class="tb">
       <thead><tr>
+        <th style="color:#505060;font-size:.64em;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px">이벤트ID</th>
         <th>이벤트 / 병원</th>
         <th class="r">최근 추이</th>
         ${sHdr(selectedMonth==='Q1'?'q1':'su', selectedMonth==='Q1'?'누적 SU':'SU')}
@@ -496,7 +503,7 @@ function render(){
         ${sHdr('qoq','QoQ')}
         ${sHdr('yoy','YoY')}
       </tr></thead>
-      <tbody>${rows||'<tr><td colspan="8" class="emp">검색 결과가 없습니다</td></tr>'}</tbody>
+      <tbody>${rows||'<tr><td colspan="9" class="emp">검색 결과가 없습니다</td></tr>'}</tbody>
     </table>
     </div>
   </div>
@@ -612,6 +619,22 @@ function doSort(col){
   render();
 }
 
+function copyEid(id, el){
+  navigator.clipboard.writeText(id).then(()=>{
+    el.textContent = '✓ 복사됨';
+    el.classList.add('copied');
+    setTimeout(()=>{ el.textContent=id; el.classList.remove('copied'); }, 1500);
+  }).catch(()=>{
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = id; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    el.textContent = '✓ 복사됨'; el.classList.add('copied');
+    setTimeout(()=>{ el.textContent=id; el.classList.remove('copied'); }, 1500);
+  });
+}
 function toggleGlossary(){
   const box = document.getElementById('glossaryBox');
   const toggle = document.getElementById('glossaryToggle');
