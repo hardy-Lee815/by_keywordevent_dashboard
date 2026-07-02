@@ -107,6 +107,10 @@ h1{font-size:1.5em;font-weight:700;color:#fff;letter-spacing:-.5px}
 .sort-btn{cursor:pointer;user-select:none}
 .sort-btn:hover{color:#aaa}
 .sort-btn .arr{font-size:.7em;margin-left:2px}
+.rank-cell{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:.72em;font-weight:700;color:#555;background:#111;border:1px solid #1e1e2e}
+.rank-cell.top1{background:rgba(255,215,0,.12);border-color:rgba(255,215,0,.4);color:#ffd700}
+.rank-cell.top2{background:rgba(192,192,192,.1);border-color:rgba(192,192,192,.3);color:#c0c0c0}
+.rank-cell.top3{background:rgba(205,127,50,.1);border-color:rgba(205,127,50,.3);color:#cd7f32}
 .eid-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.7em;font-family:monospace;background:#111;border:1px solid #222;color:#666;cursor:pointer;user-select:none;transition:all .15s;white-space:nowrap}
 .eid-badge:hover{border-color:#7c6cf0;color:#c4b5fd;background:#1a1a2e}
 .eid-badge.copied{border-color:#34d399;color:#34d399;background:#0a1f15}
@@ -317,7 +321,7 @@ function render(){
     return;
   }
   // ── Table rows
-  const rows = sorted30.map(ev=>{
+  const rows = sorted30.map((ev,_ri)=>{
     const su    = getSU(ev, selectedMonth);
     const md    = selectedMonth==='Q1' ? {} : (ev.monthly[selectedMonth]||{});
     const cvr   = md.cvr||0;
@@ -368,6 +372,9 @@ function render(){
     }).join('') + '</div>';
 
     return `<tr>
+      <td style="text-align:center">
+        <span class="rank-cell${_ri===0?' top1':_ri===1?' top2':_ri===2?' top3':''}">${_ri+1}</span>
+      </td>
       <td>
         <span class="eid-badge" onclick="copyEid('${ev.id}',this)" title="클릭하여 복사">${ev.id}</span>
       </td>
@@ -493,6 +500,7 @@ function render(){
     <div style="overflow-x:auto">
     <table class="tb">
       <thead><tr>
+        <th style="color:#505060;font-size:.64em;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px">Rank</th>
         <th style="color:#505060;font-size:.64em;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px">이벤트ID</th>
         <th>이벤트 / 병원</th>
         <th class="r">최근 추이</th>
@@ -503,7 +511,7 @@ function render(){
         ${sHdr('qoq','QoQ')}
         ${sHdr('yoy','YoY')}
       </tr></thead>
-      <tbody>${rows||'<tr><td colspan="9" class="emp">검색 결과가 없습니다</td></tr>'}</tbody>
+      <tbody>${rows||'<tr><td colspan="10" class="emp">검색 결과가 없습니다</td></tr>'}</tbody>
     </table>
     </div>
   </div>
