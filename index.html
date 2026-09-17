@@ -52,7 +52,12 @@ h1{font-size:1.5em;font-weight:700;color:#fff;letter-spacing:-.5px}
 .region-acts span{color:#777;cursor:pointer;padding:3px 8px;border:1px solid #222;border-radius:6px;transition:all .15s}
 .region-acts span:hover{border-color:#7c6cf0;color:#c4b5fd}
 .region-list{max-height:290px;overflow-y:auto}
-.region-grp{font-size:.66em;color:#4a4a60;text-transform:uppercase;letter-spacing:.5px;padding:8px 4px 4px;position:sticky;top:0;background:#0e0e1a}
+.region-grp{display:flex;align-items:center;gap:8px;font-size:.7em;color:#6b6b88;letter-spacing:.3px;padding:7px 6px 5px;margin-top:4px;position:sticky;top:0;background:#0e0e1a;cursor:pointer;border-bottom:1px solid #1b1b2c;user-select:none}
+.region-grp:hover{color:#a89ae8}
+.region-grp input{accent-color:#7c6cf0;cursor:pointer;width:13px;height:13px;flex:none}
+.region-grp .ggn{flex:1;font-weight:600}
+.region-grp .ggc{color:#3f3f55;font-variant-numeric:tabular-nums}
+.region-item{padding-left:22px}
 .region-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;font-size:.8em;color:#bbb;user-select:none}
 .region-item:hover{background:#17172a}
 .region-item input{accent-color:#7c6cf0;cursor:pointer;width:14px;height:14px;flex:none}
@@ -180,6 +185,15 @@ const KEYWORDS = [
   '리프팅','보톡스','필러','눈밑지방','안면윤곽','눈썹','제모','쌍꺼풀'
 ];
 
+const R7_ALIAS = {
+  '강남서초':'서울 강남 서초',
+  '비강남서초':'서울',
+  '경기':'경기 경기도',
+  '인천':'인천 인천광역시',
+  '부산':'부산 부산광역시',
+  '대구':'대구 대구광역시',
+  '기타지방':'기타 지방'
+};
 const R7_ORDER = ['강남서초','비강남서초','경기','인천','부산','대구','기타지방',''];
 const RSEP = '\u0001';
 
@@ -216,9 +230,18 @@ function regionFilterHtml(){
   let groups='', lastG=null;
   REGION_LIST.forEach(r=>{
     const g = r.r7||'미분류';
-    if(g!==lastG){ groups += `<div class="region-grp" data-grp="${g}">${g}</div>`; lastG=g; }
+    if(g!==lastG){
+      const gr = r.r7;
+      const gtot = REGION_LIST.filter(x=>x.r7===r.r7).reduce((a,x)=>a+x.count,0);
+      groups += `<label class="region-grp" data-grp="${g}">
+        <input type="checkbox" onchange="toggleRegionGroup('${encodeURIComponent(gr)}')" data-g="${encodeURIComponent(gr)}">
+        <span class="ggn">${g} 전체</span><span class="ggc">${gtot.toLocaleString()}</span>
+      </label>`;
+      lastG=g;
+    }
     const on = selectedRegions.has(r.key);
-    groups += `<label class="region-item" data-name="${r.label}">
+    const terms = `${r.label} ${r.r7||''} ${R7_ALIAS[r.r7]||''}`;
+    groups += `<label class="region-item" data-name="${terms}">
       <input type="checkbox" ${on?'checked':''} onchange="toggleRegion(this.dataset.k)" data-k="${encodeURIComponent(r.key)}">
       <span class="rgn">${r.label}</span><span class="rgc">${r.count.toLocaleString()}</span>
     </label>`;
@@ -246,6 +269,7 @@ function regionFilterHtml(){
 }
 
 function applyRegionSearchDom(){
+  syncGroupChecks();
   const q = regionQuery.trim().toLowerCase();
   const list = document.getElementById('regionList');
   if(!list) return;
@@ -263,7 +287,7 @@ function applyRegionSearchDom(){
       if(el.classList.contains('region-item') && el.style.display!=='none'){any=true;break;}
       el=el.nextElementSibling;
     }
-    g.style.display = any?'block':'none';
+    g.style.display = any?'flex':'none';
   });
   const emp = document.getElementById('regionEmpty');
   if(emp) emp.style.display = visible?'none':'block';
@@ -286,11 +310,31 @@ function toggleRegionKey(encKey){
   regionOpen = true;
   applyFilter();
 }
+function toggleRegionGroup(encG){
+  const g = decodeURIComponent(encG);
+  const inG = REGION_LIST.filter(r=>r.r7===g);
+  const allOn = inG.every(r=>selectedRegions.has(r.key));
+  inG.forEach(r=>{ if(allOn) selectedRegions.delete(r.key); else selectedRegions.add(r.key); });
+  regionOpen = true;
+  applyFilter();
+}
+function syncGroupChecks(){
+  const list = document.getElementById('regionList');
+  if(!list) return;
+  [...list.querySelectorAll('.region-grp input')].forEach(cb=>{
+    const g = decodeURIComponent(cb.dataset.g);
+    const inG = REGION_LIST.filter(r=>r.r7===g);
+    const n = inG.filter(r=>selectedRegions.has(r.key)).length;
+    cb.checked = n>0 && n===inG.length;
+    cb.indeterminate = n>0 && n<inG.length;
+  });
+}
 function clearRegions(){ selectedRegions.clear(); regionOpen = true; applyFilter(); }
 function selectVisibleRegions(){
   const q = regionQuery.trim().toLowerCase();
   if(!q) return;
-  REGION_LIST.filter(r=>r.label.toLowerCase().includes(q)).forEach(r=>selectedRegions.add(r.key));
+  REGION_LIST.filter(r=>`${r.label} ${r.r7||''} ${R7_ALIAS[r.r7]||''}`.toLowerCase().includes(q))
+    .forEach(r=>selectedRegions.add(r.key));
   regionOpen = true;
   applyFilter();
 }
@@ -301,6 +345,8 @@ function restoreRegionUI(){
     const si = document.getElementById('regionSearch');
     if(si){ si.value = regionQuery; }
     applyRegionSearchDom();
+  }
+  if(p){ syncGroupChecks();
   }
 }
 document.addEventListener('click',()=>{
@@ -603,7 +649,7 @@ function render(){
     <div class="sh">
       <div class="si2" style="background:#34d399"></div>
       <div class="st">이벤트 SU 상세</div>
-      <div class="ct">${periodLabel} 기준 SU 상위 30개 이벤트</div>
+      <div class="ct">${periodLabel} 기준 SU 순 · 총 ${fmtN(filtered.length)}건 중 상위 ${Math.min(30, sorted30.length)}건 표시</div>
       ${momNote}
     </div>
     <div style="overflow-x:auto">
